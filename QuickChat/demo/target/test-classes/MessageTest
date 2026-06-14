@@ -1,0 +1,172 @@
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+/**
+ *
+ * @author Student
+ */
+public class MessageTest {
+
+    @Before
+    public void setUp() {
+        Message.resetAll();
+    }
+
+    // ── PART 1 Tests ──────────────────────────────────────────────────────────
+
+    @Test
+    public void testUsernameSuccess() {
+        assertEquals("Username successfully captured.", Login.checkUserName("kyl_1"));
+    }
+
+    @Test
+    public void testUsernameFailure() {
+        assertEquals(
+            "Username is not correctly formatted, please ensure that your " +
+            "username contains an underscore and is no more than 5 characters in length.",
+            Login.checkUserName("kyle1234")
+        );
+    }
+
+    @Test
+    public void testPasswordSuccess() {
+        assertEquals("Password successfully captured.", Login.checkPasswordComplexity("Ch&&sec@ke99!"));
+    }
+
+    @Test
+    public void testPasswordFailure() {
+        assertEquals(
+            "Password is not correctly formatted, please ensure that the password " +
+            "contains at least 8 characters, a capital letter, a number, and a special character.",
+            Login.checkPasswordComplexity("password")
+        );
+    }
+
+    // ── PART 2 Tests ──────────────────────────────────────────────────────────
+
+    @Test
+    public void testMessageLengthSuccess() {
+        assertEquals("Message ready to send.",
+            Message.validateMessageLength("Hi Mike, can you join us for dinner tonight?"));
+    }
+
+    @Test
+    public void testMessageLengthFailure() {
+        String longMsg = "A".repeat(260);
+        assertEquals(
+            "Message exceeds 250 characters by 10; please reduce the size.",
+            Message.validateMessageLength(longMsg)
+        );
+    }
+
+    @Test
+    public void testRecipientSuccess() {
+        Message msg = new Message("+27718693002", "Hi Mike, can you join us for dinner tonight?", 0);
+        assertEquals("Cell phone number successfully captured.", msg.checkRecipientCell());
+    }
+
+    @Test
+    public void testRecipientFailure() {
+        Message msg = new Message("08575975889", "Hi Keegan, did you receive the payment?", 1);
+        assertEquals(
+            "Cell phone number is incorrectly formatted or does not contain " +
+            "an international code. Please correct the number and try again.",
+            msg.checkRecipientCell()
+        );
+    }
+
+    @Test
+    public void testMessageHashFormat() {
+        Message msg = new Message("+27718693002", "Hi Mike, can you join us for dinner tonight?", 0);
+        String hash = msg.getMessageHash();
+        assertTrue("Hash should contain :0:", hash.contains(":0:"));
+        assertTrue("Hash should end with HITONIGHT", hash.endsWith(":HITONIGHT"));
+    }
+
+    @Test
+    public void testMessageIDGenerated() {
+        Message msg = new Message("+27718693002", "Hi", 0);
+        assertTrue(msg.checkMessageID());
+        assertEquals(10, msg.getMessageID().length());
+    }
+
+    @Test
+    public void testSentMessageSend() {
+        Message msg = new Message("+27718693002", "Hi Mike", 0);
+        assertEquals("Message successfully sent.", msg.SentMessage(1));
+    }
+
+    @Test
+    public void testSentMessageDisregard() {
+        Message msg = new Message("08575975889", "Hi Keegan", 1);
+        assertEquals("Press 0 to delete the message.", msg.SentMessage(2));
+    }
+
+    @Test
+    public void testSentMessageStore() {
+        Message msg = new Message("+27718693002", "Test store", 0);
+        assertEquals("Message successfully stored.", msg.SentMessage(3));
+    }
+
+    // ── PART 3 Tests ──────────────────────────────────────────────────────────
+
+    private void populateTestData() {
+        new Message("+27834557896", "Did you get the cake?", 0).SentMessage(1);
+        new Message("+27838884567", "Where are you? You are late! I have asked you to be on time.", 1).SentMessage(3);
+        new Message("+27834484567", "Yohoooo, I am at your gate.", 2).SentMessage(2);
+        new Message("0838884567",   "It is dinner time !", 3).SentMessage(1);
+        new Message("+27838884567", "Ok, I am leaving without you.", 4).SentMessage(3);
+    }
+
+    @Test
+    public void testSentArrayPopulated() {
+        populateTestData();
+        assertTrue(Message.getSentMessages().contains("Did you get the cake?"));
+        assertTrue(Message.getSentMessages().contains("It is dinner time !"));
+    }
+
+    @Test
+    public void testLongestMessage() {
+        populateTestData();
+        assertEquals(
+            "Where are you? You are late! I have asked you to be on time.",
+            Message.displayLongestMessage()
+        );
+    }
+
+    @Test
+    public void testSearchByID() {
+        populateTestData();
+        assertTrue(Message.searchByMessageID("0838884567").contains("It is dinner time !"));
+    }
+
+    @Test
+    public void testSearchByRecipient() {
+        populateTestData();
+        String result = Message.searchByRecipient("+27838884567");
+        assertTrue(result.contains("Where are you? You are late! I have asked you to be on time."));
+        assertTrue(result.contains("Ok, I am leaving without you."));
+    }
+
+    @Test
+    public void testDeleteByHash() {
+        populateTestData();
+        String targetHash = null;
+        for (String h : Message.getMessageHashes()) {
+            if (h.contains(":1:")) { targetHash = h; break; }
+        }
+        assertNotNull(targetHash);
+        String result = Message.deleteByHash(targetHash);
+        assertTrue(result.contains("successfully deleted"));
+    }
+
+    @Test
+    public void testDisplayReport() {
+        populateTestData();
+        String report = Message.displayReport();
+        assertTrue(report.contains("Message Hash"));
+        assertTrue(report.contains("Recipient"));
+        assertTrue(report.contains("Message"));
+    }
+}
